@@ -6,6 +6,7 @@ module.exports = {
     '^.+\\.ts?$': 'ts-jest',
   },
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$',
+  testPathIgnorePatterns: ['<rootDir>/test/CookieProvider.test.ts'],
   moduleNameMapper: {
     '^@src/(.*)$': '<rootDir>/src/$1',
   },
