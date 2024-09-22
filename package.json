@@ -4,6 +4,7 @@
   "description": "A set of methods commonly used by zolab members.",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
     "test": "jest"
   },
   "repository": {
