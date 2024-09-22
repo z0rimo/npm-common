@@ -1,5 +1,5 @@
 {
-  "name": "npm-common",
+  "name": "@zorimo/common",
   "version": "0.0.2",
   "description": "A set of methods commonly used by zolab members.",
   "main": "index.js",
@@ -20,6 +20,9 @@
     "url": "https://github.com/z0rimo/npm-common/issues"
   },
   "homepage": "https://github.com/z0rimo/npm-common#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.13",
     "@types/node": "^20.5.1",
