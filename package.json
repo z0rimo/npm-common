@@ -1,0 +1,22 @@
+{
+  "name": "npm-common",
+  "version": "0.0.1",
+  "description": "A set of methods commonly used by zolab members.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/z0rimo/npm-common.git"
+  },
+  "keywords": [
+    "common"
+  ],
+  "author": "zorimo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/z0rimo/npm-common/issues"
+  },
+  "homepage": "https://github.com/z0rimo/npm-common#readme"
+}
