@@ -12,7 +12,11 @@
     "url": "git+https://github.com/z0rimo/npm-common.git"
   },
   "keywords": [
-    "common"
+    "common",
+    "classname",
+    "cookie",
+    "uuid",
+    "UUID"
   ],
   "author": "zorimo",
   "license": "MIT",
