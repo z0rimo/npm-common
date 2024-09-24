@@ -1,6 +1,6 @@
 {
   "name": "@zorimo/common",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A set of methods commonly used by zolab members.",
   "main": "index.js",
   "scripts": {
