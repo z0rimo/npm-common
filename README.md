@@ -1,8 +1,8 @@
-# @z0rimo/common
+# @zorimo/common
 
 ![npm version](https://img.shields.io/npm/v/@zorimo/common)
 
-A set of common utility methods used by z0rimo.
+A set of common utility methods used by zorimo.
 
 ## Installation
 
