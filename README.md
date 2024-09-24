@@ -1,8 +1,8 @@
-# @zorimo/common
+# @z0rimo/common
 
 ![npm version](https://img.shields.io/npm/v/@zorimo/common)
 
-A set of common utility methods used by zolab members.
+A set of common utility methods used by z0rimo.
 
 ## Installation
 
