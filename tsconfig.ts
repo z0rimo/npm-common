@@ -12,7 +12,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "noEmitOnError": true,
-    "outDir": "dist",
+    "outDir": "./dist",
     "removeComments": false,
     "sourceMap": false,
     "strict": true,

@@ -121,10 +121,9 @@ const processSvgs = (inputFolder: string, outputFolder: string = 'svgs'): void =
   }
 
   const svgFiles = fs.readdirSync(inputFolder);
-
   for (const svgFile of svgFiles) {
     if (path.extname(svgFile) === '.svg') {
-      createFilesForSvg(svgFile, inputFolder, outputFolder);
+      createFilesForSvg(svgFile, inputFolder, outputFolder) ;
     }
   }
 };

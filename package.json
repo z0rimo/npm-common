@@ -1,7 +1,7 @@
 {
   "name": "@zorimo/common",
-  "version": "0.0.5",
-  "description": "A set of methods commonly used by zorimo",
+  "version": "0.0.6",
+  "description": "A set of common utility methods",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
@@ -16,7 +16,9 @@
     "classname",
     "cookie",
     "uuid",
-    "UUID"
+    "UUID",
+    "SVG",
+    "Lazy"
   ],
   "author": "zorimo",
   "license": "MIT",
