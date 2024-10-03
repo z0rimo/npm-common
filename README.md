@@ -131,3 +131,6 @@ import { ReactComponent as MyIcon } from './my-icon.svg';
  
 ## Contributing
 Contributions are welcome! Please open an issue or submit a pull request with your improvements.
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/z0rimo/npm-common/blob/main/LICENSE) file for details.
