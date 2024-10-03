@@ -2,7 +2,7 @@
 
 ![npm version](https://img.shields.io/npm/v/@zorimo/common)
 
-A set of common utility methods used by zorimo.
+A set of common utility methods.
 
 ## Installation
 
