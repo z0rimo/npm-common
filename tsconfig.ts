@@ -20,7 +20,8 @@
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
-    "target": "es5"
+    "target": "es5",
+    "jsx": "react-jsx"
   },
   "include": [
     "src"
