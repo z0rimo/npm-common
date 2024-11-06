@@ -93,6 +93,38 @@ This allows you to import SVG files as React components like this:
 import { ReactComponent as MyIcon } from './my-icon.svg';
 ```
 
+### SVG2XML Converter
+Convert SVG files into Android-compatible XML vector format, which can be used directly in Android projects.
+
+#### How to Use
+The svg2xml converter processes SVG files and generates XML files optimized for Android’s vector format:
+
+1. Place your SVG files in a folder.
+2. Use the following command to convert an SVG file:
+
+```
+npx tsx SVG2XML.ts <input.svg>
+```
+The output XML will include:
+
+- Path data extracted from SVG paths, circles, rectangles, and lines.
+- Color conversion with optional alpha transparency.
+- Gradients and animations, if present, mapped to Android-compatible attributes.
+
+#### Example of Output Structure
+A simple SVG input will be converted to an XML structure like:
+```
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:pathData="M0,0 L100,100"
+        android:fillColor="#ff0000" />
+</vector>
+```
+
 ## API
 
 ### ClassNameHelper
@@ -128,6 +160,10 @@ import { ReactComponent as MyIcon } from './my-icon.svg';
     
 - **moveToOriginFolder(svgFile: string, inputFolder: string): void**
   - Moves the original SVG file to the origin-svgs folder after processing.
+ 
+### SVG2XML Converter
+- **convertSvgToAndroidVector(inputFile: string, outputFile: string): void**
+  - Converts an SVG file to an Android XML vector file format, processing paths, shapes, gradients, and animations.
  
 ## Contributing
 Contributions are welcome! Please open an issue or submit a pull request with your improvements.
