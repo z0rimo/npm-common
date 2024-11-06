@@ -1,6 +1,6 @@
 {
   "name": "@zorimo/common",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "A set of common utility methods",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,8 @@
     "uuid",
     "UUID",
     "SVG",
-    "Lazy"
+    "Lazy",
+    "XML"
   ],
   "author": "zorimo",
   "license": "MIT",
@@ -38,5 +39,8 @@
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "xml2js": "^0.6.2"
   }
 }
