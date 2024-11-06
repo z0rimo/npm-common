@@ -1,7 +1,23 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { parseString } from 'xml2js';
-import { AnimationElement, CircleElement, GradientElement, gradientMap, GradientStop, LineElement, PathElement, RectElement, RGBColor, SvgAttributes } from './ISVG2XML';
+import { AnimationElement, CircleElement, GradientElement, gradientMap, GradientStop, GroupElement, LineElement, PathElement, RectElement, RGBColor, SvgAttributes } from './ISVG2XML';
+
+/**
+ * Maps SVG attribute names to Android property names.
+ * @param svgAttribute - Attribute name from SVG (e.g., 'opacity').
+ * @returns Mapped property name (e.g., 'alpha').
+ */
+function getPropertyName(svgAttribute: string): string {
+  const propertyMap: { [key: string]: string } = {
+    'opacity': 'alpha',
+    'transform': 'rotation',
+    'cx': 'x',
+    'cy': 'y',
+    'r': 'radius'
+  };
+  return propertyMap[svgAttribute] || svgAttribute;
+}
 
 /**
  * Converts a hex color code to an RGB color object.
@@ -23,16 +39,61 @@ function hexToRgb(hex: string): RGBColor | null {
 }
 
 /**
+ * Converts SVG animation attributes to Android-compatible objectAnimator attributes.
+ * @param animation - Animation element from parsed SVG.
+ * @returns Formatted string for Android Vector XML `<objectAnimator>` element.
+ */
+function convertAnimation(animation: AnimationElement): string {
+  const propertyName = getPropertyName(animation.$.attributeName);
+  return `    <objectAnimator
+      android:propertyName="${propertyName}"
+      android:duration="${animation.$.dur || '1000'}"
+      android:valueFrom="${animation.$.from || '0'}"
+      android:valueTo="${animation.$.to || '1'}"
+      android:valueType="floatType"
+      android:repeatCount="${animation.$.repeatCount || 'infinite'}" />\n`;
+}
+
+/**
+ * Converts an SVG Circle element to Android Vector format.
+ * @param circle - Circle element from parsed SVG.
+ * @returns Formatted string for Android Vector XML `<path>` element representing a circle.
+ */
+function convertCircle(circle: CircleElement): string {
+  const cx = parseFloat(circle.$.cx);
+  const cy = parseFloat(circle.$.cy);
+  const r = parseFloat(circle.$.r);
+
+  const pathData = `M ${cx} ${cy - r} ` +
+    `C ${cx + r * 0.552285} ${cy - r} ${cx + r} ${cy - r * 0.552285} ${cx + r} ${cy} ` +
+    `C ${cx + r} ${cy + r * 0.552285} ${cx + r * 0.552285} ${cy + r} ${cx} ${cy + r} ` +
+    `C ${cx - r * 0.552285} ${cy + r} ${cx - r} ${cy + r * 0.552285} ${cx - r} ${cy} ` +
+    `C ${cx - r} ${cy - r * 0.552285} ${cx - r * 0.552285} ${cy - r} ${cx} ${cy - r} Z`;
+
+  const fill = circle.$.fill || '#000000';
+  const stroke = circle.$.stroke;
+  const strokeWidth = circle.$['stroke-width'];
+
+  return `    <path
+        android:fillColor="${convertColor(fill)}"${stroke ? `
+        android:strokeColor="${convertColor(stroke)}"` : ''}${strokeWidth ? `
+        android:strokeWidth="${strokeWidth}"` : ''}
+        android:pathData="${pathData}" />\n`;
+}
+
+/**
  * Converts an optional color string to a valid color format.
  * @param color - Optional color string from SVG element.
  * @returns Hex color string (e.g., '#000000' if color is undefined).
  */
 function convertColor(color: string | undefined): string {
   if (!color) return '#000000';
+  if (color === 'none') return 'transparent';
   if (color.startsWith('#') || color.startsWith('rgb') ||
-    ['black', 'red', 'blue', 'green'].includes(color)) {
+    ['black', 'red', 'blue', 'green', 'white'].includes(color)) {
     return color;
   }
+  if (color === 'white') return '#FFFFFF';
   return '#000000';
 }
 
@@ -65,34 +126,6 @@ function convertColorWithOpacity(color: string, opacity: string): string {
 }
 
 /**
- * Converts an SVG Path element to Android Vector format.
- * @param path - Path element from parsed SVG.
- * @returns Formatted string for Android Vector XML `<path>` element.
- */
-function convertPath(path: PathElement): string {
-  const strokeWidth = path.$['stroke-width'];
-  const fill = path.$.fill;
-  let fillColor = '';
-
-  if (fill && fill.startsWith('url(#')) {
-    const gradientId = fill.slice(5, -1); // url(#id) 에서 id 추출
-    const gradient = gradientMap.get(gradientId);
-    if (gradient) {
-      return `    <path
-        android:pathData="${path.$.d}">
-        ${convertGradient(gradient)}
-    </path>`;
-    }
-  }
-
-  return `    <path
-        android:pathData="${path.$.d}"
-        android:fillColor="${convertColor(fill)}"${path.$.stroke ? `
-        android:strokeColor="${convertColor(path.$.stroke)}"` : ''}${strokeWidth ? `
-        android:strokeWidth="${strokeWidth}"` : ''} />`;
-}
-
-/**
  * Converts an SVG Gradient element (linear or radial) to Android Vector format.
  * @param gradient - Gradient element from parsed SVG.
  * @returns Formatted string for Android Vector XML gradient attributes.
@@ -107,89 +140,17 @@ function convertGradient(gradient: GradientElement): string {
                 android:endX="${gradient.$.x2 || '100%'}"
                 android:endY="${gradient.$.y2 || '0%'}">
                 ${gradient.stop.map((stop: GradientStop) => {
-                    const color = stop.$['stop-color'];
-                    const opacity = stop.$['stop-opacity'];
-                    const colorWithOpacity = opacity ? convertColorWithOpacity(color, opacity) : color;
-                    return `                <item
+      const color = stop.$['stop-color'];
+      const opacity = stop.$['stop-opacity'];
+      const colorWithOpacity = opacity ? convertColorWithOpacity(color, opacity) : color;
+      return `                <item
                     android:offset="${stop.$.offset}"
                     android:color="${colorWithOpacity}" />`;
-                }).join('\n')}
+    }).join('\n')}
             </gradient>
         </aapt:attr>`;
   }
   return '';
-}
-
-/**
- * Converts SVG animation attributes to Android-compatible objectAnimator attributes.
- * @param animation - Animation element from parsed SVG.
- * @returns Formatted string for Android Vector XML `<objectAnimator>` element.
- */
-function convertAnimation(animation: AnimationElement): string {
-  const propertyName = getPropertyName(animation.$.attributeName);
-  return `    <objectAnimator
-      android:propertyName="${propertyName}"
-      android:duration="${animation.$.dur || '1000'}"
-      android:valueFrom="${animation.$.from || '0'}"
-      android:valueTo="${animation.$.to || '1'}"
-      android:valueType="floatType"
-      android:repeatCount="${animation.$.repeatCount || 'infinite'}" />\n`;
-}
-
-/**
- * Maps SVG attribute names to Android property names.
- * @param svgAttribute - Attribute name from SVG (e.g., 'opacity').
- * @returns Mapped property name (e.g., 'alpha').
- */
-function getPropertyName(svgAttribute: string): string {
-  const propertyMap: { [key: string]: string } = {
-    'opacity': 'alpha',
-    'transform': 'rotation',
-    'cx': 'x',
-    'cy': 'y',
-    'r': 'radius'
-  };
-  return propertyMap[svgAttribute] || svgAttribute;
-}
-
-/**
- * Converts an SVG Rect element to Android Vector format.
- * @param rect - Rect element from parsed SVG.
- * @returns Formatted string for Android Vector XML `<path>` element representing a rectangle.
- */
-function convertRect(rect: RectElement): string {
-  const x = rect.$.x || '0';
-  const y = rect.$.y || '0';
-  const strokeWidth = rect.$ && rect.$['stroke-width'] ? rect.$['stroke-width'] : null;
-  const stroke = rect.$ && rect.$.stroke ? rect.$.stroke : null;
-
-  const rectPath = `M${x} ${y} h${rect.$.width} v${rect.$.height} h-${rect.$.width} z`;
-  return `    <path
-        android:pathData="${rectPath}"
-        android:fillColor="${convertColor(rect.$.fill)}"${stroke ? `
-        android:strokeColor="${stroke}"` : ''}${strokeWidth ? `
-        android:strokeWidth="${strokeWidth}"` : ''} />\n`;
-}
-
-/**
- * Converts an SVG Circle element to Android Vector format.
- * @param circle - Circle element from parsed SVG.
- * @returns Formatted string for Android Vector XML `<path>` element representing a circle.
- */
-function convertCircle(circle: CircleElement): string {
-  const cx = parseFloat(circle.$.cx);
-  const cy = parseFloat(circle.$.cy);
-  const r = parseFloat(circle.$.r);
-  const strokeWidth = circle.$ && circle.$['stroke-width'] ? circle.$['stroke-width'] : null;
-  const stroke = circle.$ && circle.$.stroke ? circle.$.stroke : null;
-
-  const circlePath = `M ${cx - r},${cy} A ${r},${r} 0 1 0 ${cx + r},${cy} A ${r},${r} 0 1 0 ${cx - r},${cy}`;
-
-  return `    <path
-      android:pathData="${circlePath}"
-      android:fillColor="${convertColor(circle.$.fill)}"${stroke ? `
-      android:strokeColor="${stroke}"` : ''}${strokeWidth ? `
-      android:strokeWidth="${strokeWidth}"` : ''} />\n`;
 }
 
 /**
@@ -204,6 +165,92 @@ function convertLine(line: LineElement): string {
       android:pathData="${linePath}"
       android:strokeColor="${convertColor(line.$.stroke)}"
       android:strokeWidth="${strokeWidth}" />\n`;
+}
+
+/**
+ * Converts an SVG Path element to Android Vector format.
+ * @param path - Path element from parsed SVG.
+ * @returns Formatted string for Android Vector XML `<path>` element.
+ */
+function convertPath(path: PathElement): string {
+  const transform = path.$.transform;
+  let transformAttrs = '';
+  const fill = path.$.fill;
+
+  if (transform) {
+    const { rotation, translationX, translationY } = processTransform(transform);
+    if (rotation !== 0) {
+      transformAttrs += `
+        android:rotation="${rotation}"`;
+    }
+    if (translationX !== 0) {
+      transformAttrs += `
+        android:translationX="${translationX}"`;
+    }
+    if (translationY !== 0) {
+      transformAttrs += `
+        android:translationY="${translationY}"`;
+    }
+  }
+
+  if (fill && fill.startsWith('url(#')) {
+    const gradientId = fill.slice(5, -1);
+    const gradient = gradientMap.get(gradientId);
+    if (gradient) {
+      return `    <path
+        android:pathData="${path.$.d}"${path.$.stroke ? `
+        android:strokeColor="${convertColor(path.$.stroke)}"` : ''}${path.$['stroke-width'] ? `
+        android:strokeWidth="${path.$['stroke-width']}"` : ''}${transformAttrs}>
+${convertGradient(gradient)}
+    </path>\n`;
+    }
+  }
+
+  return `    <path
+        android:pathData="${path.$.d}"
+        android:fillColor="${convertColor(fill)}"${path.$.stroke ? `
+        android:strokeColor="${convertColor(path.$.stroke)}"` : ''}${path.$['stroke-width'] ? `
+        android:strokeWidth="${path.$['stroke-width']}"` : ''}${transformAttrs} />\n`;
+}
+
+/**
+ * Converts an SVG Rect element to Android Vector format.
+ * @param rect - Rect element from parsed SVG.
+ * @returns Formatted string for Android Vector XML `<path>` element representing a rectangle.
+ */
+function convertRect(rect: RectElement): string {
+  const x = parseFloat(rect.$.x || '0');
+  const y = parseFloat(rect.$.y || '0');
+  const width = parseFloat(rect.$.width);
+  const height = parseFloat(rect.$.height);
+
+  const rxValue = rect.$.rx || '0';
+  const ryValue = rect.$.ry || rxValue || '0';
+  const rx = parseFloat(rxValue);
+  const ry = parseFloat(ryValue);
+
+  let pathData: string;
+  if (rx === 0 && ry === 0) {
+    // Processing rectangles with unrounded corners.
+    pathData = `M ${x} ${y} h ${width} v ${height} h ${-width} Z`;
+  } else {
+    // Processing rectangles with rounded corners.
+    pathData = `M ${x + rx} ${y} ` +
+      `L ${x + width - rx} ${y} ` +
+      `Q ${x + width} ${y} ${x + width} ${y + ry} ` +
+      `L ${x + width} ${y + height - ry} ` +
+      `Q ${x + width} ${y + height} ${x + width - rx} ${y + height} ` +
+      `L ${x + rx} ${y + height} ` +
+      `Q ${x} ${y + height} ${x} ${y + height - ry} ` +
+      `L ${x} ${y + ry} ` +
+      `Q ${x} ${y} ${x + rx} ${y} Z`;
+  }
+
+  return `    <path
+        android:fillColor="${convertColor(rect.$.fill)}"${rect.$.stroke ? `
+        android:strokeColor="${convertColor(rect.$.stroke)}"` : ''}${rect.$['stroke-width'] ? `
+        android:strokeWidth="${rect.$['stroke-width']}"` : ''}
+        android:pathData="${pathData}" />\n`;
 }
 
 /**
@@ -239,7 +286,7 @@ function convertSvgToAndroidVector(inputFile: string, outputFile: string) {
       const defs = result.svg.defs[0];
       if (defs.linearGradient) {
         defs.linearGradient.forEach((gradient: GradientElement) => {
-          gradient.$.type = 'linear';
+          gradient.$.type = gradient.$.type || 'linear';
           gradientMap.set(gradient.$.id, gradient);
         });
       }
@@ -298,11 +345,91 @@ function convertSvgToAndroidVector(inputFile: string, outputFile: string) {
       });
     }
 
+    if (result.svg.g) {
+      result.svg.g.forEach((group: GroupElement) => {
+        vectorXml += handleGroup(group);
+      });
+    }
+
     vectorXml += '</vector>';
 
     fs.writeFileSync(outputFile, vectorXml);
     console.log('Conversion completed successfully!');
   });
+}
+
+/**
+ * Converts an SVG Group element, handling transformations and nested elements.
+ * Processes transformations like rotation and translation, and converts nested SVG elements
+ * (path, circle, rect) into Android Vector XML format.
+ * 
+ * @param group - Group element from parsed SVG.
+ * @returns Formatted string for Android Vector XML `<group>` element with nested elements.
+ */
+function handleGroup(group: GroupElement): string {
+  let result = '';
+  const transform = group.$.transform;
+  let transformAttrs = '';
+
+  result += '    <group';
+  if (transform) {
+    const { rotation, translationX, translationY } = processTransform(transform);
+    if (rotation !== 0) {
+      transformAttrs += ` android:rotation="${rotation}"`;
+    }
+    if (translationX !== 0) {
+      transformAttrs += ` android:translateX="${translationX}"`;
+    }
+    if (translationY !== 0) {
+      transformAttrs += ` android:translateY="${translationY}"`;
+    }
+  }
+  result += `${transformAttrs}>\n`;
+
+  if (group.path) {
+    group.path.forEach(path => {
+      result += convertPath(path);
+    });
+  }
+
+  if (group.circle) {
+    group.circle.forEach(circle => {
+      result += convertCircle(circle);
+    });
+  }
+
+  if (group.rect) {
+    group.rect.forEach(rect => {
+      result += convertRect(rect);
+    });
+  }
+
+  result += '    </group>\n';
+  return result;
+}
+
+/**
+ * Parses an SVG transform string to extract rotation and translation values.
+ * Supports parsing rotation and translation values for Android Vector transformations.
+ * 
+ * @param transform - Transform attribute string from SVG.
+ * @returns Object with rotation, translationX, and translationY values.
+ */
+function processTransform(transform: string): { rotation: number, translationX: number, translationY: number } {
+  const result = { rotation: 0, translationX: 0, translationY: 0 };
+
+  if (!transform) return result;
+
+  const rotateMatch = transform.match(/rotate$([-\d.]+)(?:[\s,]+([-\d.]+)[\s,]+([-\d.]+))?$/);
+  if (rotateMatch) {
+    result.rotation = parseFloat(rotateMatch[1]);
+    if (rotateMatch[2] && rotateMatch[3]) {
+      result.translationX = parseFloat(rotateMatch[2]);
+      result.translationY = parseFloat(rotateMatch[3]);
+    }
+  }
+
+  return result;
 }
 
 // Command line interface

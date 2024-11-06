@@ -9,6 +9,7 @@ export interface PathElement {
     d: string;
     fill?: string;
     stroke?: string;
+    transform?: string;
     'stroke-width'?: string;
   };
 }
@@ -21,6 +22,9 @@ export interface RectElement {
     height: string;
     fill?: string;
     stroke?: string;
+    rx?: string;
+    ry?: string;
+    transform?: string;
     'stroke-width'?: string;
   };
 }
@@ -84,6 +88,16 @@ export interface RGBColor {
   r: number;
   g: number;
   b: number;
+}
+
+export interface GroupElement {
+  $: {
+    filter?: string;
+    transform?: string;
+  };
+  circle?: CircleElement[];
+  rect?: RectElement[];
+  path?: PathElement[];
 }
 
 export const gradientMap = new Map<string, GradientElement>();
