@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { parseString } from 'xml2js';
-import { AnimationElement, CircleElement, GradientElement, gradientMap, GradientStop, GroupElement, LineElement, PathElement, RectElement, RGBColor, SvgAttributes } from './ISVG2XML';
+import { AnimationElement, CircleElement, GradientElement, gradientMap, GradientStop, GroupElement, LineElement, PathElement, RectElement, RGBColor, SvgAttributes, TransformResult } from './ISVG2XML';
 
 /**
  * Maps SVG attribute names to Android property names.
@@ -88,12 +88,24 @@ function convertCircle(circle: CircleElement): string {
  */
 function convertColor(color: string | undefined): string {
   if (!color) return '#000000';
-  if (color === 'none') return 'transparent';
-  if (color.startsWith('#') || color.startsWith('rgb') ||
-    ['black', 'red', 'blue', 'green', 'white'].includes(color)) {
+  if (color === 'none') return '@android:color/transparent';
+
+  const colorMap: { [key: string]: string } = {
+    'white': '#FFFFFF',
+    'black': '#000000',
+    'red': '#FF0000',
+    'blue': '#0000FF',
+    'green': '#00FF00'
+  };
+
+  if (colorMap[color]) {
+    return colorMap[color];
+  }
+
+  if (color.startsWith('#') || color.startsWith('rgb')) {
     return color;
   }
-  if (color === 'white') return '#FFFFFF';
+
   return '#000000';
 }
 
@@ -174,22 +186,18 @@ function convertLine(line: LineElement): string {
  */
 function convertPath(path: PathElement): string {
   const transform = path.$.transform;
-  let transformAttrs = '';
   const fill = path.$.fill;
+  let groupStart = '';
+  let groupEnd = '';
 
   if (transform) {
-    const { rotation, translationX, translationY } = processTransform(transform);
+    const { rotation, pivotX, pivotY } = processTransform(transform);
     if (rotation !== 0) {
-      transformAttrs += `
-        android:rotation="${rotation}"`;
-    }
-    if (translationX !== 0) {
-      transformAttrs += `
-        android:translationX="${translationX}"`;
-    }
-    if (translationY !== 0) {
-      transformAttrs += `
-        android:translationY="${translationY}"`;
+      groupStart = `    <group
+        android:rotation="${rotation}"${pivotX !== undefined ? `
+        android:pivotX="${pivotX}"` : ''}${pivotY !== undefined ? `
+        android:pivotY="${pivotY}"` : ''}>\n`;
+      groupEnd = '    </group>\n';
     }
   }
 
@@ -197,20 +205,24 @@ function convertPath(path: PathElement): string {
     const gradientId = fill.slice(5, -1);
     const gradient = gradientMap.get(gradientId);
     if (gradient) {
-      return `    <path
+      const pathElement = `    <path
         android:pathData="${path.$.d}"${path.$.stroke ? `
         android:strokeColor="${convertColor(path.$.stroke)}"` : ''}${path.$['stroke-width'] ? `
-        android:strokeWidth="${path.$['stroke-width']}"` : ''}${transformAttrs}>
+        android:strokeWidth="${path.$['stroke-width']}"` : ''}>
 ${convertGradient(gradient)}
     </path>\n`;
+
+      return groupStart + pathElement + groupEnd;
     }
   }
 
-  return `    <path
+  const pathElement = `    <path
         android:pathData="${path.$.d}"
         android:fillColor="${convertColor(fill)}"${path.$.stroke ? `
         android:strokeColor="${convertColor(path.$.stroke)}"` : ''}${path.$['stroke-width'] ? `
-        android:strokeWidth="${path.$['stroke-width']}"` : ''}${transformAttrs} />\n`;
+        android:strokeWidth="${path.$['stroke-width']}"` : ''} />\n`;
+
+  return groupStart + pathElement + groupEnd;
 }
 
 /**
@@ -219,6 +231,21 @@ ${convertGradient(gradient)}
  * @returns Formatted string for Android Vector XML `<path>` element representing a rectangle.
  */
 function convertRect(rect: RectElement): string {
+  const transform = rect.$.transform;
+  let groupStart = '';
+  let groupEnd = '';
+
+  if (transform) {
+    const { rotation, pivotX, pivotY } = processTransform(transform);
+    if (rotation !== 0) {
+      groupStart = `    <group
+        android:rotation="${rotation}"${pivotX !== undefined ? `
+        android:pivotX="${pivotX}"` : ''}${pivotY !== undefined ? `
+        android:pivotY="${pivotY}"` : ''}>\n`;
+      groupEnd = '    </group>\n';
+    }
+  }
+
   const x = parseFloat(rect.$.x || '0');
   const y = parseFloat(rect.$.y || '0');
   const width = parseFloat(rect.$.width);
@@ -246,11 +273,13 @@ function convertRect(rect: RectElement): string {
       `Q ${x} ${y} ${x + rx} ${y} Z`;
   }
 
-  return `    <path
+  const pathElement =  `    <path
         android:fillColor="${convertColor(rect.$.fill)}"${rect.$.stroke ? `
         android:strokeColor="${convertColor(rect.$.stroke)}"` : ''}${rect.$['stroke-width'] ? `
         android:strokeWidth="${rect.$['stroke-width']}"` : ''}
         android:pathData="${pathData}" />\n`;
+
+        return groupStart + pathElement + groupEnd;
 }
 
 /**
@@ -366,45 +395,54 @@ function convertSvgToAndroidVector(inputFile: string, outputFile: string) {
  * @param group - Group element from parsed SVG.
  * @returns Formatted string for Android Vector XML `<group>` element with nested elements.
  */
-function handleGroup(group: GroupElement): string {
-  let result = '';
+function handleGroup(group: GroupElement, indentLevel: number = 1): string {
+  const baseIndent = '    '.repeat(indentLevel);
+  let result = `${baseIndent}<group`;
   const transform = group.$.transform;
   let transformAttrs = '';
 
-  result += '    <group';
   if (transform) {
-    const { rotation, translationX, translationY } = processTransform(transform);
+    const { rotation, pivotX, pivotY } = processTransform(transform);
     if (rotation !== 0) {
       transformAttrs += ` android:rotation="${rotation}"`;
     }
-    if (translationX !== 0) {
-      transformAttrs += ` android:translateX="${translationX}"`;
+    if (pivotX !== undefined) {
+      transformAttrs += ` android:pivotX="${pivotX}"`;
     }
-    if (translationY !== 0) {
-      transformAttrs += ` android:translateY="${translationY}"`;
+    if (pivotY !== undefined) {
+      transformAttrs += ` android:pivotY="${pivotY}"`;
     }
   }
+
   result += `${transformAttrs}>\n`;
+
+  const innerIndent = '    '.repeat(indentLevel + 1);
 
   if (group.path) {
     group.path.forEach(path => {
-      result += convertPath(path);
+      result += convertPath(path).split('\n').map(line => (line ? innerIndent + line : line)).join('\n');
     });
   }
 
   if (group.circle) {
     group.circle.forEach(circle => {
-      result += convertCircle(circle);
+      result += convertCircle(circle).split('\n').map(line => (line ? innerIndent + line : line)).join('\n');
     });
   }
 
   if (group.rect) {
     group.rect.forEach(rect => {
-      result += convertRect(rect);
+      result += convertRect(rect).split('\n').map(line => (line ? innerIndent + line : line)).join('\n');
     });
   }
 
-  result += '    </group>\n';
+  if (group.g) {
+    group.g.forEach(innerGroup => {
+      result += handleGroup(innerGroup, indentLevel + 1);
+    });
+  }
+
+  result += `${baseIndent}</group>\n`;
   return result;
 }
 
@@ -415,17 +453,24 @@ function handleGroup(group: GroupElement): string {
  * @param transform - Transform attribute string from SVG.
  * @returns Object with rotation, translationX, and translationY values.
  */
-function processTransform(transform: string): { rotation: number, translationX: number, translationY: number } {
-  const result = { rotation: 0, translationX: 0, translationY: 0 };
+function processTransform(transform: string): TransformResult {
+  const result: TransformResult = {
+    rotation: 0,
+    pivotX: undefined,
+    pivotY: undefined
+  };
 
   if (!transform) return result;
 
-  const rotateMatch = transform.match(/rotate$([-\d.]+)(?:[\s,]+([-\d.]+)[\s,]+([-\d.]+))?$/);
+  const rotateMatch = transform.match(/rotate\(([-\d.]+)(?:[\s,]+([-\d.]+)[\s,]+([-\d.]+))?\)/);
+  console.log('Transform:', transform);
+  console.log('Match:', rotateMatch);
+  
   if (rotateMatch) {
     result.rotation = parseFloat(rotateMatch[1]);
     if (rotateMatch[2] && rotateMatch[3]) {
-      result.translationX = parseFloat(rotateMatch[2]);
-      result.translationY = parseFloat(rotateMatch[3]);
+      result.pivotX = parseFloat(rotateMatch[2]);
+      result.pivotY = parseFloat(rotateMatch[3]);
     }
   }
 

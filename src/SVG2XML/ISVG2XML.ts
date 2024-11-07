@@ -96,8 +96,15 @@ export interface GroupElement {
     transform?: string;
   };
   circle?: CircleElement[];
+  g?: GroupElement[];
   rect?: RectElement[];
   path?: PathElement[];
+}
+
+export interface TransformResult {
+  rotation: number;
+  pivotX?: number;
+  pivotY?: number;
 }
 
 export const gradientMap = new Map<string, GradientElement>();
