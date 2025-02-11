@@ -15,7 +15,7 @@ describe('CookieProvider', () => {
     const name = 'testCookie';
     const value = 'testValue';
     const exp = new Date();
-    exp.setTime(exp.getTime() + (60*60*1000)); // Expires in 1 hour
+    exp.setTime(exp.getTime() + (60*60*1000));
 
     cookieProvider.setCookie(name, value, exp);
     const result = cookieProvider.getCookie(name);
@@ -32,7 +32,7 @@ describe('CookieProvider', () => {
     const name = 'testCookie';
     const value = 'testValue';
     const exp = new Date();
-    exp.setTime(exp.getTime() + (60*60*1000)); // Expires in 1 hour
+    exp.setTime(exp.getTime() + (60*60*1000));
 
     cookieProvider.setCookie(name, value, exp);
     cookieProvider.removeCookie(name);
@@ -44,7 +44,7 @@ describe('CookieProvider', () => {
   test('should set, get, and remove banner cookie', () => {
     const value = 'bannerValue';
     const exp = new Date();
-    exp.setTime(exp.getTime() + (60*60*1000)); // Expires in 1 hour
+    exp.setTime(exp.getTime() + (60*60*1000));
 
     cookieProvider.setBanner(value, exp);
     const banner = cookieProvider.getBanner();
