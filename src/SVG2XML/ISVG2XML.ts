@@ -107,4 +107,23 @@ export interface TransformResult {
   pivotY?: number;
 }
 
+export interface FilterElement {
+  $: {
+    id: string;
+    x?: string;
+    y?: string;
+    width?: string;
+    height?: string;
+  };
+  feDropShadow?: [{
+    $: {
+      dx?: string;
+      dy?: string;
+      stdDeviation?: string;
+      'flood-color'?: string;
+      'flood-opacity'?: string;
+    }
+  }];
+}
+
 export const gradientMap = new Map<string, GradientElement>();
