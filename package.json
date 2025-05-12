@@ -2,7 +2,15 @@
   "name": "@zorimo/common",
   "version": "0.0.11",
   "description": "A set of common utility methods",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "test": "jest"
@@ -35,6 +43,7 @@
     "@types/node": "^20.5.1",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
+    "@types/xml2js": "^0.4.14",
     "jest": "^29.6.3",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.1",
