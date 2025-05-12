@@ -1,8 +1,0 @@
-src/
-test/
-*.ts
-*.tsx
-tsconfig.json
-jest.config.js
-.vscode/
-.gitignore
