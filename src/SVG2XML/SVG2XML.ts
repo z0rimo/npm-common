@@ -421,7 +421,7 @@ function convertRect(rect: RectElement): string {
   let filterEffect = '';
   if (rect.$['filter']) {
     const filterId = rect.$['filter'].slice(5, -1);
-    filterEffect = applyFilter[filterId] || '';
+    filterEffect = applyFilter(filterId);
   }
 
   const pathElement = `    <path
@@ -507,7 +507,7 @@ function convertSvgToAndroidVector(inputFile: string, outputFile: string) {
   filters = {};
   const svgContent = fs.readFileSync(inputFile, 'utf8');
 
-  parseString(svgContent, (err, result) => {
+  parseString(svgContent, (err: Error | null, result: any) => {
     if (err) {
       console.error('Error parsing SVG:', err);
       return;

@@ -11,6 +11,7 @@ export interface PathElement {
     stroke?: string;
     transform?: string;
     'stroke-width'?: string;
+    filter?: string;
   };
 }
 
@@ -26,6 +27,7 @@ export interface RectElement {
     ry?: string;
     transform?: string;
     'stroke-width'?: string;
+    filter?: string;
   };
 }
 
@@ -37,6 +39,7 @@ export interface CircleElement {
     fill?: string;
     stroke?: string;
     'stroke-width'?: string;
+    filter?: string;
   };
 }
 
@@ -48,6 +51,7 @@ export interface LineElement {
     y2: string;
     stroke?: string;
     'stroke-width'?: string;
+    filter?: string;
   };
 }
 
