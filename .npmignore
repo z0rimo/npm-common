@@ -1,6 +1,8 @@
 src/
+test/
 *.ts
 *.tsx
 tsconfig.json
 jest.config.js
-test/
+.vscode/
+.gitignore
