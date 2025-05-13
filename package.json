@@ -1,6 +1,6 @@
 {
   "name": "@zorimo/common",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A set of common utility methods",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
